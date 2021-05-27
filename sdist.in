@@ -1,0 +1,3 @@
+python -m pip install -U setuptools
+python setup.py sdist clean --all
+exit ${SCRIPT_RET}

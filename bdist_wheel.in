@@ -1,0 +1,4 @@
+python -m pip install setuptools
+python -m pip install wheel
+python setup.py bdist_wheel ${BDIST_WHEEL_OPTIONS} clean --all
+exit ${SCRIPT_RET}
