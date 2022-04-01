@@ -23,14 +23,23 @@ if (PYTHON_CROSS_PLATFORM_NAME)
     set(BDIST_WHEEL_OPTIONS "--plat-name ${PYTHON_CROSS_PLATFORM_NAME}")
 endif()
 
-# Macro to change path files from PARSED_DIRECTORY to the parameter output_dir
-macro( get_output_files output_dir )
-    foreach( SOURCE_FILE ${${ARGN}} )
-        string (REGEX REPLACE "${PARSED_DIRECTORY}" "${ARGV0}" OUTPUT_FILE
-                "${SOURCE_FILE}")
-        list(APPEND "${ARGN}_OUTPUT" ${OUTPUT_FILE})
+# Replace the specified list of source directories by target directory in files
+function(get_output_files)
+    # Parse arguments
+    set(oneValueArgs DST_DIR OUTPUT_VAR)
+    set(multiValueArgs SRC_DIRS SRC_FILES)
+    cmake_parse_arguments(PARSED "${options}"
+                                 "${oneValueArgs}"
+                                 "${multiValueArgs}"
+                                 ${ARGN})
+    # Initialize output variable with input sources
+    set(DST_FILES ${PARSED_SRC_FILES})
+    foreach(SRC_DIR IN LISTS PARSED_SRC_DIRS)
+        list(TRANSFORM DST_FILES REPLACE ${SRC_DIR} ${PARSED_DST_DIR})
     endforeach()
-endmacro()
+    # Cmake functions cannot return values: Set output variable in parent scope
+    set(${PARSED_OUTPUT_VAR} ${DST_FILES} PARENT_SCOPE)
+endfunction()
 
 # Macro to change path libraries to CMAKE_CURRENT_BINARY_DIR
 macro( get_output_libs )
@@ -51,11 +60,12 @@ endmacro()
 # - one or several README files.
 #
 # Args:
-#  NAME      the base name for the package
-#  DIRECTORY the directory that contains the package sources
-#  VERSION   the package version
-#  DEPENDS   the targets this package depends on
-#  LIBRARIES the libraries to include to the package
+#  NAME        the base name for the package
+#  DIRECTORY   the directory that contains the package setup files
+#  VERSION     the package version
+#  DEPENDS     the targets this package depends on
+#  SOURCE_DIRS the package source directories
+#  LIBRARIES   the libraries to include to the package
 #
 # Exported variables:
 #
@@ -66,15 +76,15 @@ endmacro()
 function(add_python_package)
 
     # Parse arguments
-    set(oneValueArgs NAME DIRECTORY VERSION PYTHON_SOURCE_DIR)
-    set(multiValueArgs DEPENDS LIBRARIES)
+    set(oneValueArgs NAME DIRECTORY VERSION)
+    set(multiValueArgs SOURCE_DIRS DEPENDS LIBRARIES)
     cmake_parse_arguments(PARSED "${options}"
                                  "${oneValueArgs}"
                                  "${multiValueArgs}"
                                  ${ARGN})
 
-    if(NOT DEFINED PARSED_PYTHON_SOURCE_DIR )
-        set(PARSED_PYTHON_SOURCE_DIR "${PARSED_DIRECTORY}/src")
+    if(NOT DEFINED PARSED_SOURCE_DIRS )
+        set(PARSED_SOURCE_DIRS "${PARSED_DIRECTORY}/src")
     ENDIF()
 
     # We will generate the setup.py based on Cmake configuration variables
@@ -82,15 +92,34 @@ function(add_python_package)
     set(SETUP_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
 
     # Explicitly list input files
-    file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "${PARSED_PYTHON_SOURCE_DIR}/*.py")
+    list(TRANSFORM PARSED_SOURCE_DIRS APPEND "/*.*" OUTPUT_VARIABLE GLOB_SOURCES)
+    file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS ${GLOB_SOURCES})
     file(GLOB LICENSES "${PARSED_DIRECTORY}/LICENSE*")
     file(GLOB READMES "${PARSED_DIRECTORY}/README*")
 
-    # Obtains binary directory filenames that will be stored in new
-    # <VARIABLE>_OUTPUT variables
-    get_output_files("${CMAKE_CURRENT_BINARY_DIR}/${PARSED_NAME}" SOURCES)
-    get_output_files("${CMAKE_CURRENT_BINARY_DIR}" LICENSES)
-    get_output_files("${CMAKE_CURRENT_BINARY_DIR}" READMES)
+    # Evaluate the output files corresponding to files from source directories
+    get_output_files(
+        DST_DIR
+            "${CMAKE_CURRENT_BINARY_DIR}/${PARSED_NAME}"
+        SRC_DIRS
+            "${PARSED_SOURCE_DIRS}"
+        SRC_FILES
+            "${SOURCES}"
+        OUTPUT_VAR
+            SOURCES_OUTPUT
+    )
+    # Evaluate the output files corresponding to files in the current directory
+    get_output_files(
+        DST_DIR
+            "${CMAKE_CURRENT_BINARY_DIR}"
+        SRC_DIRS
+            "${CMAKE_CURRENT_SOURCE_DIR}"
+        SRC_FILES
+            "${LICENSES}"
+            "${READMES}"
+        OUTPUT_VAR
+            OTHERS_OUTPUT
+    )
 
     # Custom command to prepare the directory containing the package files
     # in the build directory
@@ -98,16 +127,15 @@ function(add_python_package)
         OUTPUT
             ${CMAKE_CURRENT_BINARY_DIR}/MANIFEST.in
             ${SOURCES_OUTPUT}
-            ${LICENSES_OUTPUT}
-            ${READMES_OUTPUT}
+            ${OTHERS_OUTPUT}
             ${CMAKE_CURRENT_BINARY_DIR}/${PARSED_NAME}
         # Create target directory
         COMMAND
             ${CMAKE_COMMAND} -E make_directory
                     ${CMAKE_CURRENT_BINARY_DIR}/${PARSED_NAME}
-        # Copy source tree
+        # Copy source directories contents at the root of the package
         COMMAND
-            ${CMAKE_COMMAND} -E copy_directory ${PARSED_PYTHON_SOURCE_DIR}
+            ${CMAKE_COMMAND} -E copy_directory ${PARSED_SOURCE_DIRS}
                     ${CMAKE_CURRENT_BINARY_DIR}/${PARSED_NAME}
         # Copy manifest
         COMMAND
