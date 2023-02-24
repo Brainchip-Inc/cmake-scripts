@@ -136,6 +136,7 @@ function(add_venv_target)
         DEPENDS
             ${PARSED_NAME}_VENV
             "${PARSED_DEPENDS}"
+        USES_TERMINAL
     )
 
 endfunction()
