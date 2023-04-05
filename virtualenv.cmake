@@ -26,6 +26,7 @@ execute_process(COMMAND "${PYTHON_EXECUTABLE}" -c "import virtualenv" RESULT_VAR
 # - the target NAME,
 # - the path to the command script template,
 # - the command working directory,
+# - the path to the virtual env (defaults to CURRENT_BINARY_DIR/NAME_venv),
 # - a list of target dependencies,
 # - a flag to indicate if the target must be added to 'all'.
 #
@@ -50,14 +51,14 @@ execute_process(COMMAND "${PYTHON_EXECUTABLE}" -c "import virtualenv" RESULT_VAR
 # pytest.in:
 #  pip install pytest
 #  pip install <some-package>
-#  pytest -v -m "not fuzzy" .
+#  pytest -v .
 #  exit ${SCRIPT_RET}
 #
 function(add_venv_target)
 
     # Parse arguments
     set(options ALL)
-    set(oneValueArgs NAME COMMAND_SCRIPT_IN WORKING_DIRECTORY)
+    set(oneValueArgs NAME COMMAND_SCRIPT_IN WORKING_DIRECTORY VENV_DIR)
     set(multiValueArgs DEPENDS)
     cmake_parse_arguments(PARSED "${options}"
                                  "${oneValueArgs}"
@@ -72,11 +73,14 @@ function(add_venv_target)
     # Create a custom command to generate the virtual env #
     #######################################################
 
-    set(VENV_NAME ${PARSED_NAME}_venv)
+    set(VENV_DIR ${PARSED_VENV_DIR})
 
-    set(VENV_DIR ${CMAKE_CURRENT_BINARY_DIR}/${VENV_NAME})
+    if(NOT VENV_DIR)
+        set(VENV_NAME ${PARSED_NAME}_venv)
+        set(VENV_DIR ${CMAKE_CURRENT_BINARY_DIR}/${VENV_NAME})
+    endif()
 
-    # Create a custom target for the virtual env
+    # Create a custom target for the virtual env directory
     add_custom_target(${PARSED_NAME}_VENV
       DEPENDS
         ${VENV_DIR}
@@ -87,7 +91,7 @@ function(add_venv_target)
         OUTPUT
             ${VENV_DIR}
         COMMAND
-            ${PYTHON_EXECUTABLE} -m virtualenv -p ${PYTHON_EXECUTABLE} ${VENV_NAME}
+            ${PYTHON_EXECUTABLE} -m virtualenv -p ${PYTHON_EXECUTABLE} ${VENV_DIR}
     )
 
     ###################################
