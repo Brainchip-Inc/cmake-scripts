@@ -78,13 +78,19 @@ function(add_venv_target)
     if(NOT VENV_DIR)
         set(VENV_NAME ${PARSED_NAME}_venv)
         set(VENV_DIR ${CMAKE_CURRENT_BINARY_DIR}/${VENV_NAME})
+    else()
+        get_filename_component(VENV_NAME ${VENV_DIR} NAME)
     endif()
 
-    # Create a custom target for the virtual env directory
-    add_custom_target(${PARSED_NAME}_VENV
-      DEPENDS
-        ${VENV_DIR}
-    )
+    set(VENV_TARGET gen_${VENV_NAME})
+
+    if(NOT TARGET ${VENV_TARGET})
+        # Create a custom target for the virtual env directory
+        add_custom_target(${VENV_TARGET}
+        DEPENDS
+            ${VENV_DIR}
+        )
+    endif()
 
     # Create a custom command to create the virtual env
     add_custom_command(
@@ -138,7 +144,7 @@ function(add_venv_target)
         WORKING_DIRECTORY
             ${PARSED_WORKING_DIRECTORY}
         DEPENDS
-            ${PARSED_NAME}_VENV
+            ${VENV_TARGET}
             "${PARSED_DEPENDS}"
         USES_TERMINAL
     )
