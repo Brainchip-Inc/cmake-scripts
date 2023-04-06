@@ -66,6 +66,7 @@ endmacro()
 #  DEPENDS     the targets this package depends on
 #  SOURCE_DIRS the package source directories
 #  LIBRARIES   the libraries to include to the package
+#  VENV_DIR    the path to the virtual environment to use to build the package
 #
 # Exported variables:
 #
@@ -76,7 +77,7 @@ endmacro()
 function(add_python_package)
 
     # Parse arguments
-    set(oneValueArgs NAME DIRECTORY VERSION)
+    set(oneValueArgs NAME DIRECTORY VERSION VENV_DIR)
     set(multiValueArgs SOURCE_DIRS DEPENDS LIBRARIES)
     cmake_parse_arguments(PARSED "${options}"
                                  "${oneValueArgs}"
@@ -196,6 +197,8 @@ function(add_python_package)
             ALL
             COMMAND_SCRIPT_IN
                 ${BDIST_WHEEL_IN}
+            VENV_DIR
+                ${PARSED_VENV_DIR}
             WORKING_DIRECTORY
                 ${CMAKE_CURRENT_BINARY_DIR}
             DEPENDS
@@ -224,6 +227,8 @@ function(add_python_package)
                 ${SDIST_IN}
             WORKING_DIRECTORY
                 ${CMAKE_CURRENT_BINARY_DIR}
+            VENV_DIR
+                ${PARSED_VENV_DIR}
             DEPENDS
                 ${CMAKE_CURRENT_BINARY_DIR}/MANIFEST.in
                 ${SOURCES_OUTPUT}
