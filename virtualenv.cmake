@@ -59,7 +59,7 @@ function(add_venv_target)
     # Parse arguments
     set(options ALL)
     set(oneValueArgs NAME COMMAND_SCRIPT_IN WORKING_DIRECTORY VENV_DIR)
-    set(multiValueArgs DEPENDS)
+    set(multiValueArgs DEPENDS OUTPUT)
     cmake_parse_arguments(PARSED "${options}"
                                  "${oneValueArgs}"
                                  "${multiValueArgs}"
@@ -137,16 +137,38 @@ function(add_venv_target)
         set(ALL_TARGET ALL)
     endif()
 
-    # Add custom target
-    add_custom_target(${PARSED_NAME} ${ALL_TARGET}
-        COMMAND
-            ${SCRIPT_RUNNER} ${VENV_WRAPPER_SCRIPT}
-        WORKING_DIRECTORY
-            ${PARSED_WORKING_DIRECTORY}
-        DEPENDS
-            ${VENV_TARGET}
-            "${PARSED_DEPENDS}"
-        USES_TERMINAL
-    )
+    if (PARSED_OUTPUT)
+        # If OUTPUT is defined, we use add_custom_command + add_custom_target,
+        # to avoid running virtual env script everytime
+        add_custom_command(
+            OUTPUT
+                ${PARSED_OUTPUT}
+            COMMAND
+                ${SCRIPT_RUNNER} ${VENV_WRAPPER_SCRIPT}
+            WORKING_DIRECTORY
+                ${PARSED_WORKING_DIRECTORY}
+            DEPENDS
+                ${VENV_TARGET}
+                "${PARSED_DEPENDS}"
+            USES_TERMINAL
+        )
+        add_custom_target(${PARSED_NAME} ${ALL_TARGET}
+            DEPENDS
+                ${PARSED_OUTPUT}
+        )
+    else()
+        # Without OUTPUT, we can only use add_custom_target, that means virtual
+        # env script will be run everytime the target is called
+        add_custom_target(${PARSED_NAME} ${ALL_TARGET}
+            COMMAND
+                ${SCRIPT_RUNNER} ${VENV_WRAPPER_SCRIPT}
+            WORKING_DIRECTORY
+                ${PARSED_WORKING_DIRECTORY}
+            DEPENDS
+                ${VENV_TARGET}
+                "${PARSED_DEPENDS}"
+            USES_TERMINAL
+        )
+    endif()
 
 endfunction()
