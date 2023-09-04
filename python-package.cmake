@@ -185,7 +185,6 @@ function(add_python_package)
                         ${CMAKE_CURRENT_BINARY_DIR}/${PARSED_NAME}
             DEPENDS
                 ${PARSED_LIBRARIES}
-                ${CMAKE_CURRENT_BINARY_DIR}/${PARSED_NAME}
         )
 
         # Add a custom target to generate the wheel inside a virtual environment
