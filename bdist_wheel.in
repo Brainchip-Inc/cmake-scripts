@@ -1,3 +1,3 @@
-python -m pip install -U pip setuptools wheel
-python setup.py bdist_wheel ${BDIST_WHEEL_OPTIONS} clean --all
+python -m pip install -U pip setuptools build
+python -m build -o ${CMAKE_CURRENT_BINARY_DIR}/dist --wheel
 exit ${SCRIPT_RET}
