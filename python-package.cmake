@@ -97,6 +97,7 @@ function(add_python_package)
     file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS ${GLOB_SOURCES})
     file(GLOB LICENSES "${PARSED_DIRECTORY}/LICENSE*")
     file(GLOB READMES "${PARSED_DIRECTORY}/README*")
+    file(GLOB PYPROJECT_TOML "${PARSED_DIRECTORY}/pyproject.toml")
 
     # Evaluate the output files corresponding to files from source directories
     get_output_files(
@@ -118,6 +119,7 @@ function(add_python_package)
         SRC_FILES
             "${LICENSES}"
             "${READMES}"
+            "${PYPROJECT_TOML}"
         OUTPUT_VAR
             OTHERS_OUTPUT
     )
@@ -148,10 +150,14 @@ function(add_python_package)
         # Copy README file(s)
         COMMAND
             ${CMAKE_COMMAND} -E copy ${READMES} ${CMAKE_CURRENT_BINARY_DIR}
+        # Copy pyproject.toml
+        COMMAND
+            ${CMAKE_COMMAND} -E copy ${PYPROJECT_TOML} ${CMAKE_CURRENT_BINARY_DIR}
         DEPENDS
             ${PARSED_DIRECTORY}/MANIFEST.in
             "${LICENSES}"
             "${READMES}"
+            "${PYPROJECT_TOML}"
             "${SOURCES}"
             "${PARSED_DEPENDS}"
     )
@@ -205,6 +211,7 @@ function(add_python_package)
                 ${SOURCES_OUTPUT}
                 ${LICENSES_OUTPUT}
                 ${READMES_OUTPUT}
+                ${PYPROJECT_TOML_OUTPUT}
                 ${PARSED_LIBRARIES_OUTPUT}
         )
 
@@ -233,6 +240,7 @@ function(add_python_package)
                 ${SOURCES_OUTPUT}
                 ${LICENSES_OUTPUT}
                 ${READMES_OUTPUT}
+                ${PYPROJECT_TOML_OUTPUT}
         )
 
     endif ()
